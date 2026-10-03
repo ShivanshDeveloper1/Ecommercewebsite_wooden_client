@@ -1,3 +1,18 @@
+# Project Rules
+
+* Next.js + TypeScript + Tailwind CSS.
+* Keep code simple, reusable, and token-efficient.
+* Use Tailwind for page/component styling.
+* Keep `globals.css` minimal; use existing variables/colors.
+* MongoDB for products/categories.
+* Cloudinary for product images.
+* Admin panel is basic; no authentication/security system needed.
+* Avoid Framer Motion and unnecessary libraries.
+* Reuse components instead of duplicating code.
+* Do not change existing design/colors unless required.
+* Build mobile-responsive UI.
+* Before creating new code, inspect existing files and reuse what already exists.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
