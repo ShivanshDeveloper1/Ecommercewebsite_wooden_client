@@ -20,9 +20,10 @@ export default function Header() {
   <img
     src="/logo.png"
     alt="OudArs"
-    className="h-12 w-auto object-contain"
+    className="h-8 w-auto object-contain sm:h-9 md:h-10"
   />
 </Link>
+
           <nav className={`main-nav${menuOpen ? " is-open" : ""}`} aria-label="Main navigation">
             <Link href="/" onClick={closeMenu}>Home</Link><Link href="/products" onClick={closeMenu}>Shop</Link><Link href="/products" onClick={closeMenu}>Categories</Link><Link href="/#about" onClick={closeMenu}>Our story</Link><Link href="/#contact" onClick={closeMenu}>Contact</Link>
           </nav>
