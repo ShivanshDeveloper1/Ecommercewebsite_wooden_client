@@ -10,7 +10,7 @@ type ProductsPageProps = {
 };
 
 export const metadata = {
-  title: "Shop the collection | Form & Forest",
+  title: "Shop the collection | OudArs",
 };
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 type CategoryPageProps = { params: Promise<{ slug: string }> };
 
-export const metadata = { title: "Category | Form & Forest" };
+export const metadata = { title: "Category | OudArs" };
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;

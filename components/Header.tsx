@@ -16,7 +16,13 @@ export default function Header() {
       <div className="announcement">A slower kind of living. Complimentary shipping on orders over $150.</div>
       <header className="site-header">
         <div className="header-inner">
-          <Link className="wordmark" href="/" aria-label="Form and Forest home" onClick={closeMenu}><span>FORM <i>&</i> FOREST</span><small>OBJECTS FOR LIVING</small></Link>
+         <Link href="/" className="wordmark wordmark-light">
+  <img
+    src="/logo.png"
+    alt="OudArs"
+    className="h-12 w-auto object-contain"
+  />
+</Link>
           <nav className={`main-nav${menuOpen ? " is-open" : ""}`} aria-label="Main navigation">
             <Link href="/" onClick={closeMenu}>Home</Link><Link href="/products" onClick={closeMenu}>Shop</Link><Link href="/products" onClick={closeMenu}>Categories</Link><Link href="/#about" onClick={closeMenu}>Our story</Link><Link href="/#contact" onClick={closeMenu}>Contact</Link>
           </nav>

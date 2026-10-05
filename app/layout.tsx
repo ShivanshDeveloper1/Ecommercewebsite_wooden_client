@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Form & Forest | Objects for Living",
+  title: "OudArs | Objects for Living",
   description: "Thoughtful wooden pieces, shaped by hand and made to bring a sense of calm to the everyday.",
 };
 
