@@ -20,7 +20,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const category = categories.find((item) => item.slug === product.categoryId);
   return (
     <CustomerShell>
-      <ProductDetail product={product} categoryName={category?.name ?? null} />
+      <ProductDetail key={product.slug} product={product} categoryName={category?.name ?? null} />
     </CustomerShell>
   );
 }

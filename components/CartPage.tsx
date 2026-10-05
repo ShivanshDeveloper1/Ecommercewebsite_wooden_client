@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCart } from "@/components/CartProvider";
+import { getCartItemKey, useCart } from "@/components/CartProvider";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
@@ -22,14 +22,24 @@ export default function CartPage() {
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
           <ul className="divide-y divide-(--line) border-y border-(--line)">
             {items.map((item) => (
-              <li key={item.slug} className="flex gap-4 py-5 sm:gap-6">
+              <li key={getCartItemKey(item)} className="flex gap-4 py-5 sm:gap-6">
                 <Link href={`/products/${item.slug}`} className="h-24 w-24 shrink-0 bg-[#dedbd1] bg-cover bg-center sm:h-32 sm:w-32" style={item.images[0] ? { backgroundImage: `url("${item.images[0]}")` } : undefined} aria-label={`View ${item.name}`} />
                 <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                  <div><Link href={`/products/${item.slug}`} className="font-serif text-lg hover:text-(--moss)">{item.name}</Link><p className="mt-1 text-sm text-(--muted)">{currency.format(item.salePrice ?? item.price)}</p></div>
+                  <div>
+                    <Link href={`/products/${item.slug}`} className="font-serif text-lg hover:text-(--moss)">{item.name}</Link>
+                    {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && (
+                      <dl className="mt-1 space-y-0.5 text-xs text-(--muted)">
+                        {Object.entries(item.selectedAttributes).map(([name, value]) => <div key={name}><dt className="inline">{name}: </dt><dd className="inline">{value}</dd></div>)}
+                      </dl>
+                    )}
+                    {item.sku && <p className="mt-1 text-xs text-(--muted)">SKU: {item.sku}</p>}
+                    <p className="mt-1 text-sm text-(--muted)">{currency.format(item.salePrice ?? item.price)}</p>
+                    {item.stock !== undefined && <p className="mt-1 text-xs text-(--muted)">{item.stock} in stock</p>}
+                  </div>
                   <div className="flex items-center gap-3">
-                    <label className="sr-only" htmlFor={`quantity-${item.slug}`}>Quantity for {item.name}</label>
-                    <input id={`quantity-${item.slug}`} type="number" min="1" max="99" value={item.quantity} onChange={(event) => updateQuantity(item.slug, Number(event.target.value))} className="w-16 rounded border border-(--line) px-2 py-2 text-center text-sm" />
-                    <button type="button" onClick={() => removeItem(item.slug)} className="text-xs text-(--muted) underline hover:text-red-700">Remove</button>
+                    <label className="sr-only" htmlFor={`quantity-${getCartItemKey(item)}`}>Quantity for {item.name}</label>
+                    <input id={`quantity-${getCartItemKey(item)}`} type="number" min="1" max={item.stock ?? 99} value={item.quantity} onChange={(event) => updateQuantity(getCartItemKey(item), Number(event.target.value))} className="w-16 rounded border border-(--line) px-2 py-2 text-center text-sm" />
+                    <button type="button" onClick={() => removeItem(getCartItemKey(item))} className="text-xs text-(--muted) underline hover:text-red-700">Remove</button>
                   </div>
                   <strong className="min-w-20 text-right text-sm font-medium">{currency.format((item.salePrice ?? item.price) * item.quantity)}</strong>
                 </div>

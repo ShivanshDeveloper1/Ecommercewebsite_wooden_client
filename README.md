@@ -26,6 +26,10 @@ Copy `.env.example` to `.env.local` and set `MONGODB_URI` and `MONGODB_DB` for y
 
 Products use a category slug as `categoryId`. Product images are stored as image URLs in `images`.
 
+Products without variation data continue to use product-level `price`, `salePrice`, and optional `sku` and `stock` fields. Variant products store generic `attributes` (`id`, display `name`, and `values`) and a `variants` array. Each variant has a stable `variantId`, attribute selections keyed by attribute ID, a unique SKU, price, and stock; optional variant images override the product images. Existing product documents do not need a migration because products without attributes and variants remain simple products.
+
+The admin generates at most 1,000 combinations at a time and preserves variant IDs, SKUs, prices, and stock for combinations that remain unchanged. Product API validation rejects duplicate combinations and case-insensitive SKU duplicates across product and variant SKUs.
+
 ## Admin
 
 Open `/admin` to manage products and categories. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in `.env.local` to enable signed image uploads. `CLOUDINARY_FOLDER` is optional and defaults to `products`.

@@ -4,7 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import type { Category } from "@/models/category";
-import type { Product } from "@/models/product";
+import type { Product, ProductAttribute, ProductVariant } from "@/models/product";
+import { createVariantId, generateVariantCombinations } from "@/lib/product-variants";
 
 type ProductRow = Product & { label?: string };
 type AdminTab = "products" | "categories";
@@ -16,9 +17,15 @@ type ProductDraft = {
   description: string;
   price: string;
   salePrice: string;
+  sku: string;
+  stock: string;
   categoryId: string;
   images: string[];
   featured: boolean;
+  attributes: ProductAttribute[];
+  variants: ProductVariant[];
+  colors: string; // Enter as comma separated: "Red, Blue, Black"
+  sizes: string;  // Enter as comma separated: "S, M, L, XL"
 };
 type UploadSignature = {
   cloudName: string;
@@ -30,14 +37,20 @@ type UploadSignature = {
 
 const emptyCategory: CategoryDraft = { name: "", slug: "", description: "", image: "" };
 const emptyProduct: ProductDraft = {
-  name: "",
+ name: "",
   slug: "",
   description: "",
   price: "",
   salePrice: "",
+  sku: "",
+  stock: "",
   categoryId: "",
   images: [],
   featured: false,
+  attributes: [],
+  variants: [],
+  colors: "",
+  sizes: "",
 };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -117,18 +130,23 @@ export default function AdminPanel() {
     setNotice(null);
     setProductSlug(product.slug);
     setProductDraft({
-      name: product.name,
-      slug: product.slug,
-      description: product.description,
-      price: String(product.price),
-      salePrice: product.salePrice === null ? "" : String(product.salePrice),
-      categoryId: product.categoryId,
-      images: product.images ?? [],
-      featured: product.featured,
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    price: String(product.price),
+    salePrice: product.salePrice === null ? "" : String(product.salePrice),
+    sku: product.sku ?? "",
+    stock: product.stock === undefined ? "" : String(product.stock),
+    categoryId: product.categoryId,
+    images: product.images ?? [],
+    featured: product.featured,
+    attributes: product.attributes ?? [],
+    variants: product.variants ?? [],
+    colors: product.colors ? product.colors.join(", ") : "",
+    sizes: product.sizes ? product.sizes.join(", ") : "",
     });
     setTab("products");
   }
-
   async function saveCategory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -154,12 +172,18 @@ export default function AdminPanel() {
     setSaving(true);
     setNotice(null);
     try {
+      const formattedColors = productDraft.colors.split(",").map(c => c.trim()).filter(Boolean);
+      const formattedSizes = productDraft.sizes.split(",").map(s => s.trim()).filter(Boolean);
       await request(`/api/admin/products${productSlug ? `/${encodeURIComponent(productSlug)}` : ""}`, {
         method: productSlug ? "PUT" : "POST",
         body: JSON.stringify({
           ...productDraft,
           price: Number(productDraft.price),
           salePrice: productDraft.salePrice === "" ? null : Number(productDraft.salePrice),
+          sku: productDraft.sku.trim(),
+          stock: productDraft.stock === "" ? null : Number(productDraft.stock),
+          colors: formattedColors,
+          sizes: formattedSizes,
         }),
       });
       await refreshRecords();
@@ -171,6 +195,49 @@ export default function AdminPanel() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function generateVariants() {
+    setNotice(null);
+    try {
+      const nextVariants = generateVariantCombinations(
+        productDraft.attributes,
+        productDraft.variants,
+        productDraft.name || productDraft.slug,
+        Number(productDraft.price) || 0,
+        productDraft.stock === "" ? 0 : Number(productDraft.stock),
+      );
+      setProductDraft((draft) => ({
+        ...draft,
+        attributes: draft.attributes.map((attribute) => ({
+          ...attribute,
+          name: attribute.name.trim(),
+          values: attribute.values.map((value) => value.trim()),
+        })),
+        variants: nextVariants,
+      }));
+      setNotice({ type: "success", message: `${nextVariants.length} variant combination${nextVariants.length === 1 ? "" : "s"} ready to review.` });
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Unable to generate variants." });
+    }
+  }
+
+  function updateAttribute(index: number, update: (attribute: ProductAttribute) => ProductAttribute) {
+    setProductDraft((draft) => ({
+      ...draft,
+      attributes: draft.attributes.map((attribute, attributeIndex) =>
+        attributeIndex === index ? update(attribute) : attribute,
+      ),
+    }));
+  }
+
+  function updateVariant(variantId: string, update: (variant: ProductVariant) => ProductVariant) {
+    setProductDraft((draft) => ({
+      ...draft,
+      variants: draft.variants.map((variant) =>
+        variant.variantId === variantId ? update(variant) : variant,
+      ),
+    }));
   }
 
   async function deleteCategory(category: Category) {
@@ -308,8 +375,107 @@ export default function AdminPanel() {
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-xs font-medium">Price<input className={fieldClass()} type="number" min="0" step="0.01" value={productDraft.price} onChange={(event) => setProductDraft({ ...productDraft, price: event.target.value })} required /></label>
                 <label className="block text-xs font-medium">Sale price<input className={fieldClass()} type="number" min="0" step="0.01" value={productDraft.salePrice} onChange={(event) => setProductDraft({ ...productDraft, salePrice: event.target.value })} placeholder="Optional" /></label>
+                <label className="block text-xs font-medium">Product SKU<input className={fieldClass()} value={productDraft.sku} onChange={(event) => setProductDraft({ ...productDraft, sku: event.target.value })} placeholder="Optional for variant products" /></label>
+                <label className="block text-xs font-medium">Product stock<input className={fieldClass()} type="number" min="0" step="1" value={productDraft.stock} onChange={(event) => setProductDraft({ ...productDraft, stock: event.target.value })} placeholder="Optional for variant products" /></label>
               </div>
               <label className="block text-xs font-medium">Category<select className={fieldClass()} value={productDraft.categoryId} onChange={(event) => setProductDraft({ ...productDraft, categoryId: event.target.value })} required><option value="">Select category</option>{categories.map((category) => <option value={category.slug} key={category.slug}>{category.name}</option>)}</select></label>
+              <section className="space-y-4 rounded border border-(--line) p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-medium">Product variations</h3>
+                    <p className="mt-1 text-xs text-(--muted)">Add any attributes, then generate only the combinations you want to sell.</p>
+                  </div>
+                  <button type="button" className="rounded border border-(--line) px-3 py-2 text-xs hover:border-(--moss)" onClick={() => setProductDraft((draft) => ({
+                    ...draft,
+                    attributes: [...draft.attributes, { id: createVariantId(), name: "", values: [""] }],
+                  }))}>Add attribute</button>
+                </div>
+
+                {productDraft.attributes.map((attribute, attributeIndex) => (
+                  <div key={attribute.id} className="space-y-2 rounded bg-background p-3">
+                    <div className="flex items-center gap-2">
+                      <label className="sr-only" htmlFor={`attribute-name-${attribute.id}`}>Attribute name</label>
+                      <input
+                        id={`attribute-name-${attribute.id}`}
+                        className={fieldClass()}
+                        placeholder="Attribute name (e.g. Color)"
+                        value={attribute.name}
+                        onChange={(event) => updateAttribute(attributeIndex, (current) => ({ ...current, name: event.target.value }))}
+                      />
+                      <button type="button" className="shrink-0 text-xs text-red-700 hover:underline" onClick={() => setProductDraft((draft) => ({
+                        ...draft,
+                        attributes: draft.attributes.filter((_, index) => index !== attributeIndex),
+                      }))}>Remove</button>
+                    </div>
+                    <div className="space-y-2">
+                      {attribute.values.map((value, valueIndex) => (
+                        <div key={`${attribute.id}-${valueIndex}`} className="flex items-center gap-2">
+                          <label className="sr-only" htmlFor={`attribute-value-${attribute.id}-${valueIndex}`}>{attribute.name || "Attribute"} option</label>
+                          <input
+                            id={`attribute-value-${attribute.id}-${valueIndex}`}
+                            className={fieldClass()}
+                            placeholder="Option value"
+                            value={value}
+                            onChange={(event) => updateAttribute(attributeIndex, (current) => ({
+                              ...current,
+                              values: current.values.map((item, index) => index === valueIndex ? event.target.value : item),
+                            }))}
+                          />
+                          <button type="button" className="shrink-0 text-xs text-red-700 hover:underline" aria-label={`Remove ${attribute.name || "attribute"} option ${valueIndex + 1}`} onClick={() => updateAttribute(attributeIndex, (current) => ({
+                            ...current,
+                            values: current.values.filter((_, index) => index !== valueIndex),
+                          }))}>Remove</button>
+                        </div>
+                      ))}
+                      <button type="button" className="text-xs text-(--moss) hover:underline" onClick={() => updateAttribute(attributeIndex, (current) => ({ ...current, values: [...current.values, ""] }))}>Add option</button>
+                    </div>
+                  </div>
+                ))}
+
+                {productDraft.attributes.length > 0 && (
+                  <button type="button" className="w-full rounded border border-(--moss) px-3 py-2.5 text-xs font-medium text-(--moss) hover:bg-(--moss)/5" onClick={generateVariants}>
+                    Generate / refresh combinations
+                  </button>
+                )}
+
+                {productDraft.variants.length > 0 && (
+                  <div className="overflow-x-auto rounded border border-(--line)">
+                    <table className="w-full min-w-[680px] border-collapse text-left text-xs">
+                      <thead className="bg-background text-(--muted)">
+                        <tr>
+                          {productDraft.attributes.map((attribute) => <th key={attribute.id} className="px-3 py-2 font-medium">{attribute.name || "Attribute"}</th>)}
+                          <th className="px-3 py-2 font-medium">SKU</th>
+                          <th className="px-3 py-2 font-medium">Price</th>
+                          <th className="px-3 py-2 font-medium">Stock</th>
+                          <th className="px-3 py-2"><span className="sr-only">Remove variant</span></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-(--line)">
+                        {productDraft.variants.map((variant) => (
+                          <tr key={variant.variantId}>
+                            {productDraft.attributes.map((attribute) => <td key={attribute.id} className="px-3 py-2">{variant.attributes[attribute.id] ?? "—"}</td>)}
+                            <td className="px-2 py-2"><input aria-label={`SKU for ${Object.values(variant.attributes).join(" / ")}`} className="w-36 rounded border border-(--line) px-2 py-2" value={variant.sku} onChange={(event) => updateVariant(variant.variantId, (current) => ({ ...current, sku: event.target.value }))} required /></td>
+                            <td className="px-2 py-2"><input aria-label={`Price for ${Object.values(variant.attributes).join(" / ")}`} className="w-24 rounded border border-(--line) px-2 py-2" type="number" min="0" step="0.01" value={variant.price} onChange={(event) => updateVariant(variant.variantId, (current) => ({ ...current, price: event.target.value === "" ? Number.NaN : Number(event.target.value) }))} required /></td>
+                            <td className="px-2 py-2"><input aria-label={`Stock for ${Object.values(variant.attributes).join(" / ")}`} className="w-20 rounded border border-(--line) px-2 py-2" type="number" min="0" step="1" value={variant.stock} onChange={(event) => updateVariant(variant.variantId, (current) => ({ ...current, stock: event.target.value === "" ? Number.NaN : Number(event.target.value) }))} required /></td>
+                            <td className="px-2 py-2"><button type="button" className="text-red-700 hover:underline" aria-label={`Remove variant ${Object.values(variant.attributes).join(" / ")}`} onClick={() => setProductDraft((draft) => ({ ...draft, variants: draft.variants.filter((item) => item.variantId !== variant.variantId) }))}>Remove</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="border-t border-(--line) px-3 py-2 text-xs text-(--muted)">Remove combinations you do not sell. Regenerating keeps SKU, price, and stock for matching combinations.</p>
+                  </div>
+                )}
+              </section>
+
+              <details className="rounded border border-(--line) px-3 py-2">
+                <summary className="cursor-pointer text-xs font-medium">Legacy color and size options</summary>
+                <p className="mt-2 text-xs text-(--muted)">Kept for compatibility with existing product records. Use Product variations for SKU- and stock-managed options.</p>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <label className="block text-xs font-medium">Available Colors<input className={fieldClass()} placeholder="Red, Blue, Black" value={productDraft.colors} onChange={(event) => setProductDraft({ ...productDraft, colors: event.target.value })} /></label>
+                  <label className="block text-xs font-medium">Available Sizes<input className={fieldClass()} placeholder="S, M, L, XL" value={productDraft.sizes} onChange={(event) => setProductDraft({ ...productDraft, sizes: event.target.value })} /></label>
+                </div>
+              </details>
+
               <div>
                 <label className="block text-xs font-medium">Product images</label>
                 <label className={`mt-2 flex cursor-pointer items-center justify-center rounded border border-dashed border-(--line) bg-background px-4 py-4 text-center text-xs text-(--muted) transition hover:border-(--moss) ${uploading ? "pointer-events-none opacity-60" : ""}`}>

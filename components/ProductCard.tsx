@@ -24,7 +24,26 @@ export default function ProductCard({ product }: { product: ProductCardItem }) {
         <span className="product-view">View piece <Icon name="arrow" /></span>
       </Link>
       <div className="product-info"><div><h3>{product.name}</h3><p>{product.description}</p></div><strong>{priceLabel}</strong></div>
-      <button className="add-button" onClick={() => addItem(product)}>Add to bag <span>+</span></button>
+      {product.variants?.length ? (
+        <Link className="add-button" href={`/products/${product.slug}`}>Choose options <span>+</span></Link>
+      ) : (
+        <button
+          className="add-button"
+          disabled={product.stock === 0}
+          onClick={() => addItem({
+            productId: product.slug,
+            name: product.name,
+            slug: product.slug,
+            price: product.price,
+            salePrice: product.salePrice,
+            images: product.images,
+            ...(product.sku ? { sku: product.sku } : {}),
+            ...(product.stock !== undefined ? { stock: product.stock } : {}),
+          })}
+        >
+          {product.stock === 0 ? "Out of stock" : "Add to bag"} <span>+</span>
+        </button>
+      )}
     </article>
   );
 }
