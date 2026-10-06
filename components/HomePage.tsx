@@ -10,6 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import TestimonialSection from "@/components/TestimonialSection";
 import type { Category } from "@/models/category";
 import type { Product } from "@/models/product";
+import Image from "next/image";
 
 type ProductCardItem = Product & { label?: string };
 
@@ -70,6 +71,16 @@ export default function HomePage({
     <>
       <Header/>
       <main>
+               <div className="relative w-full overflow-hidden">
+  <Image
+    src="/work.png"
+    alt="Featured banner"
+    width={1920}
+    height={600}
+    className="h-[220px] w-full object-cover sm:h-[320px] lg:h-[420px] py-1"
+    priority
+  />
+</div>
         {/* HERO SECTION */}
         <section className="hero section-wrap" id="home" aria-labelledby="hero-title">
           <div className="hero-copy">
@@ -103,6 +114,8 @@ export default function HomePage({
           </div>
           <span className="hero-index">01 — 04</span>
         </section>
+
+ 
 
         {/* CATEGORIES SECTION */}
         <section className="categories section-wrap" id="categories" aria-labelledby="categories-title">
