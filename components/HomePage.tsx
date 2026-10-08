@@ -20,7 +20,7 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.6 },
   },
 };
 
@@ -77,7 +77,7 @@ export default function HomePage({
     alt="Featured banner"
     width={1920}
     height={600}
-    className="h-[220px] w-full object-cover sm:h-[320px] lg:h-[420px] py-1"
+    className="h-[220px] w-full object-cover sm:h-[320px] lg:h-[420px] "
     priority
   />
 </div>

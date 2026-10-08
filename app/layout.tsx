@@ -25,8 +25,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <WhatsAppButton />
-      <body className="min-h-full flex flex-col"><CartProvider>{children}</CartProvider></body>
+
+      <body className="min-h-full flex flex-col">
+              <WhatsAppButton />
+        <CartProvider>{children}</CartProvider></body>
     </html>
   );
 }

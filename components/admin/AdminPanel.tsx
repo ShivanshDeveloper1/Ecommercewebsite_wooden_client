@@ -8,8 +8,17 @@ import type { Product, ProductAttribute, ProductVariant } from "@/models/product
 import { createVariantId, generateVariantCombinations } from "@/lib/product-variants";
 
 type ProductRow = Product & { label?: string };
-type AdminTab = "products" | "categories";
+type AdminTab = "products" | "categories" | "orders";
 type Notice = { type: "success" | "error"; message: string };
+type OrderRow = {
+  _id: string;
+  orderNumber: string;
+  customer: { fullName: string; email: string };
+  total: number;
+  paymentStatus: string;
+  orderStatus: string;
+  createdAt: string;
+};
 type CategoryDraft = { name: string; slug: string; description: string; image: string };
 type ProductDraft = {
   name: string;
@@ -64,11 +73,12 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 async function loadRecords() {
-  const [categoryResult, productResult] = await Promise.all([
+  const [categoryResult, productResult, orderResult] = await Promise.all([
     request<{ categories: Category[] }>("/api/admin/categories"),
     request<{ products: ProductRow[] }>("/api/admin/products"),
+    request<{ orders: OrderRow[] }>("/api/admin/orders"),
   ]);
-  return { categories: categoryResult.categories, products: productResult.products };
+  return { categories: categoryResult.categories, products: productResult.products, orders: orderResult.orders };
 }
 
 function money(value: number) {
@@ -87,6 +97,7 @@ export default function AdminPanel() {
   const [tab, setTab] = useState<AdminTab>("products");
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -103,6 +114,7 @@ export default function AdminPanel() {
         if (!active) return;
         setCategories(records.categories);
         setProducts(records.products);
+        setOrders(records.orders);
       })
       .catch((error: unknown) => {
         if (active) setNotice({ type: "error", message: error instanceof Error ? error.message : "Unable to load store data." });
@@ -117,6 +129,7 @@ export default function AdminPanel() {
     const records = await loadRecords();
     setCategories(records.categories);
     setProducts(records.products);
+    setOrders(records.orders);
   }
 
   function editCategory(category: Category) {
@@ -312,15 +325,49 @@ export default function AdminPanel() {
         {notice && <div role={notice.type === "error" ? "alert" : "status"} className={`mb-5 rounded border px-4 py-3 text-sm ${notice.type === "error" ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>{notice.message}</div>}
 
         <div className="mb-6 flex gap-2 border-b border-(--line)" role="tablist" aria-label="Catalog sections">
-          {(["products", "categories"] as const).map((section) => (
+          {(["products", "categories", "orders"] as const).map((section) => (
             <button key={section} type="button" role="tab" aria-selected={tab === section} onClick={() => { setTab(section); setNotice(null); }} className={`border-b-2 px-4 py-3 text-sm capitalize transition ${tab === section ? "border-(--moss) font-medium text-(--moss)" : "border-transparent text-(--muted) hover:text-(--ink)"}`}>
-              {section} <span className="ml-1 text-xs opacity-70">{section === "products" ? products.length : categories.length}</span>
+              {section} <span className="ml-1 text-xs opacity-70">{section === "products" ? products.length : section === "categories" ? categories.length : orders.length}</span>
             </button>
           ))}
         </div>
 
         {loading ? (
           <p className="py-16 text-center text-sm text-(--muted)">Loading catalog…</p>
+        ) : tab === "orders" ? (
+          <section className="overflow-hidden rounded border border-(--line) bg-white">
+            <div className="border-b border-(--line) px-5 py-4"><h2 className="text-sm font-medium">Orders</h2></div>
+            {orders.length === 0 ? (
+              <p className="px-5 py-10 text-sm text-(--muted)">No orders yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-[#f5f3ee] text-(--muted)">
+                    <tr>
+                      <th className="px-5 py-3 font-medium">Order #</th>
+                      <th className="px-5 py-3 font-medium">Customer</th>
+                      <th className="px-5 py-3 font-medium">Email</th>
+                      <th className="px-5 py-3 font-medium">Total</th>
+                      <th className="px-5 py-3 font-medium">Payment status</th>
+                      <th className="px-5 py-3 font-medium">Order status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order._id} className="border-t border-(--line)">
+                        <td className="px-5 py-3 font-medium text-(--ink)">{order.orderNumber}</td>
+                        <td className="px-5 py-3">{order.customer?.fullName ?? "—"}</td>
+                        <td className="px-5 py-3 text-(--muted)">{order.customer?.email ?? "—"}</td>
+                        <td className="px-5 py-3">{money(order.total)}</td>
+                        <td className="px-5 py-3"><span className="rounded-full border border-(--line) px-2 py-1 text-xs">{order.paymentStatus}</span></td>
+                        <td className="px-5 py-3"><span className="rounded-full border border-(--line) px-2 py-1 text-xs">{order.orderStatus}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         ) : tab === "categories" ? (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
             <section className="overflow-hidden rounded border border-(--line) bg-white">
