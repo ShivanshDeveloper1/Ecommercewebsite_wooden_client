@@ -82,7 +82,8 @@ async function loadRecords() {
 }
 
 function money(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+  return new Intl.NumberFormat("en-US", { style: "currency",     currency: "INR",
+}).format(value);
 }
 
 function fieldClass() {
