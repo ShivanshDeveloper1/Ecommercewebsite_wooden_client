@@ -77,7 +77,7 @@ export default function HomePage({
     alt="Featured banner"
     width={1920}
     height={600}
-    className="h-[220px] w-full object-cover sm:h-[320px] lg:h-[420px] py-1 "
+    className="h-[220px] w-full object-contain sm:h-[320px] lg:h-[420px] py-1 "
     priority
   />
 </div>
