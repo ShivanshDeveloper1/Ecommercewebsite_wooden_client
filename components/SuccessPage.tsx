@@ -28,21 +28,23 @@ export default function SuccessPage() {
 
 
 
-  useEffect(() => {
-    if (!orderId) return;
+useEffect(() => {
+  if (!orderId) {
+    setLoading(false);
+    return;
+  }
 
-    fetch(`/api/orders/${orderId}`)
-      .then((res) => res.json())
-      .then((data: OrderRecord) => {
-        setOrder(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, [orderId]);
-
+  fetch(`/api/orders/${orderId}`)
+    .then((res) => res.json())
+    .then((data: OrderRecord) => {
+      setOrder(data);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error(err);
+      setLoading(false);
+    });
+}, [orderId]);
 
   
 
